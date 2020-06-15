@@ -32,15 +32,16 @@ namespace M151.Projekt.API.Helpers
             if (!Request.Headers.ContainsKey("Authorization"))
                 return AuthenticateResult.Fail("Missing Authorization Header");
 
-            User user = null;
+            AuthenticateResponse user = null;
             try
             {
                 var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
                 var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
                 var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
-                var username = credentials[0];
-                var password = credentials[1];
-                user = await _userService.Authenticate(username, password);
+                var model = new AuthenticateRequest();
+                model.Username = credentials[0];
+                model.Password = credentials[1];
+                user = _userService.Authenticate(model);
             }
             catch
             {

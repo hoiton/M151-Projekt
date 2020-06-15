@@ -16,6 +16,9 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication;
 using M151.Projekt.API.Helpers;
 using M151.Projekt.API.Services;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace M151.Projekt.API
 {
@@ -34,15 +37,34 @@ namespace M151.Projekt.API
             services.AddControllers();
 
             services.AddCors();
-            services.AddAuthorization();
 
-            // configure basic authentication 
-            services.AddAuthentication("BasicAuthentication")
-                .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+            // configure strongly typed settings objects
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
+
+            // configure jwt authentication
+            var appSettings = appSettingsSection.Get<AppSettings>();
+            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(x =>
+            {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });
 
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
-
 
             services.AddSwaggerGen(c =>
             {
@@ -97,14 +119,18 @@ namespace M151.Projekt.API
 
             app.UseRouting();
 
-            app.UseAuthorization();
-            app.UseAuthentication();
+            // global cors policy
+            app.UseCors(x => x
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
 
-            app.UseEndpoints(endpoints =>
-            {
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
             });
-            
         }
     }
 }
