@@ -19,6 +19,8 @@ using M151.Projekt.API.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using M151.Projekt.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace M151.Projekt.API
 {
@@ -34,9 +36,12 @@ namespace M151.Projekt.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<M151ProjektContext>(opts => opts.UseSqlServer("server=localhost;database=M151Trash;Integrated Security=true;"));
+
             services.AddControllers();
 
             services.AddCors();
+
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
